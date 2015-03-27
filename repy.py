@@ -40,7 +40,28 @@
   --servicelog           : Enable usage of the servicelogger for internal errors
 """
 
+import json
+import encodings 
+import json.decoder
+import encodings.ascii
 
+#try:
+from _json import scanstring as c_scanstring
+#except ImportError:
+#    print "import error from json\n"
+#    c_scanstring = None
+
+json.hasattr = hasattr
+encodings.hasattr = hasattr
+
+json.unicode = unicode
+encodings.unicode = unicode
+json.decoder.unicode = unicode
+
+json.__import__ = __import__
+encodings.__import__ = __import__
+json.decoder.__import__ = __import__
+encodings.ascii.__import__ = __import__
 
 import os
 import sys
@@ -124,6 +145,8 @@ def get_safe_context(args):
   #usercontext["getthreadname"] = emulmisc.getthreadname
   usercontext["createvirtualnamespace"] = virtual_namespace.createvirtualnamespace
   usercontext["getlasterror"] = emulmisc.getlasterror
+
+  usercontext["json_parse"] = json.loads
       
   # call the initialize function
   usercontext['callfunc'] = 'initialize'
