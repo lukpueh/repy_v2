@@ -23,7 +23,7 @@ traceback.linecache = fakelinecache
 import sys
 
 # We need the service logger to log internal errors -Brent
-# import servicelogger
+import servicelogger
 
 # Used to determine whether or not we use the service logger to log internal
 # errors.  Defaults to false. -Brent
@@ -56,9 +56,6 @@ TB_SKIP_MODULES = ["repy.py","safe.py","virtual_namespace.py","namespace.py","em
 def initialize(useservlog=False, logdir = '.'):
   global servicelog
   global logdirectory
-
-  if useservlog:
-    import servicelogger
 
   servicelog = useservlog
   logdirectory = logdir
@@ -205,9 +202,6 @@ def handle_internalerror(error_string, exitcode):
   <Return>
     Shouldn't return because harshexit will always be called.
   """
-  if servicelog:
-    import servicelogger
-
   try:
     print >> sys.stderr, "Internal Error"
     handle_exception()
@@ -241,7 +235,8 @@ def handle_internalerror(error_string, exitcode):
     
       # Again we want to ensure that even if we fail to log, we still exit.
       try:
-        servicelogger.multi_process_log(exceptionstring, identifier, logdirectory)
+        if servicelog:
+          servicelogger.multi_process_log(exceptionstring, identifier, logdirectory)
       except Exception, e:
         # if an exception occurs, log it (unfortunately, to the user's log)
         print 'Inner abort of servicelogger'
