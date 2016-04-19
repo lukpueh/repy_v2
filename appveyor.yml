@@ -43,6 +43,7 @@ platform:
 # seattle projects, building the current seattle project, and running
 # the seattle unit testing framework, with all tests.
 test_script:
+  - echo "Bulding in branch"
   - "%PYTHON%\\python --version"
   - "cd scripts"
   - "%PYTHON%\\python initialize.py"
