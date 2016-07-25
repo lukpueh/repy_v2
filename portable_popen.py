@@ -21,6 +21,19 @@ def Popen(args):
   if mobile_no_subprocess:
     raise Exception("No subprocess available on this platform!")
 
+  # On android we use a custom 
+  # fork-and-run C-Python extension,
+  # because we don't have a Python binary 
+  try: 
+    import android
+
+    # Other commands (ps, wc, ifconfig, ...) don't use this extension
+    if len(args) >= 2 and "python" in str(args[0]):
+      # Todo: Add args
+      return android.run(args[1])
+  except Exception, e:
+    pass      
+
   if os.name == 'nt':
     # Windows
     return subprocess.Popen(args, creationflags=CREATE_NO_WINDOW,
