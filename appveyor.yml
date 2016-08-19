@@ -37,16 +37,17 @@ environment:
 platform:
   - x86
   - x64
+build_script:
+  - "%PYTHON%\\python --version"
+  - "cd scripts"
+  - "%PYTHON%\\python initialize.py"
+  - "%PYTHON%\\python build.py -t"
 
 # These are the commands we'll run for each build, posting the python
 # version we're *really* running, initializing to obtain needed common
 # seattle projects, building the current seattle project, and running
 # the seattle unit testing framework, with all tests.
 test_script:
-  - "%PYTHON%\\python --version"
-  - "cd scripts"
-  - "%PYTHON%\\python initialize.py"
-  - "%PYTHON%\\python build.py -t"
   - "cd ../RUNNABLE"
   - "%PYTHON%\\python utf.py -a"
 
