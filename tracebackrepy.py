@@ -23,7 +23,7 @@ traceback.linecache = fakelinecache
 import sys
 
 # We need the service logger to log internal errors -Brent
-import servicelogger
+# import servicelogger
 
 # Used to determine whether or not we use the service logger to log internal
 # errors.  Defaults to false. -Brent
@@ -34,28 +34,18 @@ servicelog = False
 # when deciding where to write our service log.
 logdirectory = None
 
-
-# We need to be able to do a harshexit on internal errors.
-import harshexit
-
-# Get the exception hierarchy
+import harshexit # We need to be able to do a harshexit on internal errors.
 import exception_hierarchy
+import os # needed to get the PID
+import encoding_header # Subtract len(ENCODING_HEADER) from error line numbers.
 
-# needed to get the PID
-import os
-
-# Armon: These set contains all the modules which are black-listed
-# from the traceback, so that if there is an exception, they will
-# not appear in the "user" (filtered) traceback.
+# This list contains all the modules which are black-listed from the
+# traceback, so that if there is an exception, they will not appear in the
+# "user" (filtered) traceback.
 TB_SKIP_MODULES = ["repy.py", "safe.py", "virtual_namespace.py", 
     "namespace.py", "emulcomm.py", "emultimer.py", "emulmisc.py", 
     "emulfile.py", "nonportable.py", "socket.py"]
 
-
-# Import virtual_namespace so that we can refer to the encoding declaration 
-# that is prepended to user code. We adjust traceback line numbers 
-# accordingly (see SeattleTestbed/repy_v2#95).
-import virtual_namespace
 
 
 # sets the user's file name.
@@ -63,6 +53,9 @@ import virtual_namespace
 def initialize(useservlog=False, logdir = '.'):
   global servicelog
   global logdirectory
+
+  if useservlog:
+    import servicelogger
 
   servicelog = useservlog
   logdirectory = logdir
@@ -145,7 +138,9 @@ def format_exception():
 
     # Construct a frame of output.
     # Adjust traceback line numbers, see SeattleTestbed/repy_v2#95.
-    stack_frame = '  "' + filename + '", line ' + str(lineno - len(virtual_namespace.ENCODING_DECLARATION.splitlines())) + ", in " + modulename + "\n"
+    stack_frame = '  "' + filename + '", line ' + \
+      str(lineno - len(encoding_header.ENCODING_DECLARATION.splitlines())) + \
+      ", in " + modulename + "\n"
 
     # Always add to the full traceback
     full_tb += stack_frame
@@ -215,6 +210,9 @@ def handle_internalerror(error_string, exitcode):
   <Return>
     Shouldn't return because harshexit will always be called.
   """
+  if servicelog:
+    import servicelogger
+
   try:
     print >> sys.stderr, "Internal Error"
     handle_exception()
@@ -248,8 +246,7 @@ def handle_internalerror(error_string, exitcode):
     
       # Again we want to ensure that even if we fail to log, we still exit.
       try:
-        if servicelog:
-          servicelogger.multi_process_log(exceptionstring, identifier, logdirectory)
+        servicelogger.multi_process_log(exceptionstring, identifier, logdirectory)
       except Exception, e:
         # if an exception occurs, log it (unfortunately, to the user's log)
         print 'Inner abort of servicelogger'

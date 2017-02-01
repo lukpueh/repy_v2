@@ -11,14 +11,8 @@
   specified global context.
 """
 
-# Treat any user code as having UTF-8 encoding. For this, 
-# prepend this encoding string
-ENCODING_DECLARATION = "# coding: utf-8\n\n"
-
-# Used for safety checking
-import safe
-
-# Get the errors
+import encoding_header # Subtract len(ENCODING_HEADER) from error line numbers.
+import safe # Used for safety checking
 from exception_hierarchy import *
 
 # This is to work around safe...
@@ -70,10 +64,9 @@ class VirtualNamespace(object):
     code = code.replace('\r\n','\n')
 
     # Prepend an encoding string to protect against bugs in that code (#982).
-    # Without further fixes, prepending the encoding string causes tracebacks 
-    # to have an inaccurate line number, see SeattleTestbed/repy_v2#95.
-    # We work around this in tracebackrepy.py
-    code = ENCODING_DECLARATION + code 
+    # This causes tracebacks to have an inaccurate line number, so we adjust
+    # them in multiple modules. See Issue [SeattleTestbed/repy_v2#95].
+    code = encoding_header.ENCODING_DECLARATION + code 
 
 
     # Do a safety check
