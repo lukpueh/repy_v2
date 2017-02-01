@@ -120,6 +120,13 @@ import safe # Used to get SafeDict
 import tracebackrepy
 import virtual_namespace
 
+# Import snakei modules
+# XXX LP: only on android
+import miscinfo
+import sensor
+import media
+import location
+
 from exception_hierarchy import *
 
 # Save a copy of a few functions not available at runtime.
@@ -351,16 +358,6 @@ class StrOrInt(ValueProcessor):
 
 
 
-class StrOrNone(ValueProcessor):
-  """Allows str, unicode, or None."""
-
-  def check(self, val):
-    if val is not None:
-      Str().check(val)
-
-
-
-
 
 class Float(ValueProcessor):
   """Allows float, int, or long."""
@@ -427,6 +424,12 @@ class Dict(ValueProcessor):
       raise RepyArgumentError("Invalid type %s" % type(val))
 
 
+class NoneOrListOrDict(ValueProcessor):
+  """Allows None, Lists or Dictionaries which may contain anything."""
+
+  def check(self, val):
+    if val is not None and not type(val) is dict and not type(val) is list:
+      raise RepyArgumentError("Invalid type %s" % type(val))
 
 
 
@@ -572,7 +575,7 @@ class VirtualNamespace(ObjectProcessor):
 
 
 
-class SafeDict(ValueProcessor):
+class SafeDict(ObjectProcessor):
   """Allows SafeDict objects."""
 
   # TODO: provide a copy function that won't actually copy so that
@@ -585,7 +588,7 @@ class SafeDict(ValueProcessor):
 
 
 
-class DictOrSafeDict(ValueProcessor):
+class DictOrSafeDict(ObjectProcessor):
   """Allows SafeDict objects or regular dict objects."""
 
   # TODO: provide a copy function that won't actually copy so that
@@ -684,11 +687,7 @@ USERCONTEXT_WRAPPER_INFO = {
   'getresources' :
       {'func' : nonportable.get_resources,
        'args' : [],
-       'return' : (Dict(), Dict(), List())},
-  'getlasterror' :
-      {'func' : emulmisc.getlasterror,
-       'args' : [],
-       'return' : StrOrNone()},
+       'return' : (Dict(), Dict(), List())}
 }
 
 FILE_OBJECT_WRAPPER_INFO = {
@@ -769,6 +768,188 @@ VIRTUAL_NAMESPACE_OBJECT_WRAPPER_INFO = {
        'args' : [DictOrSafeDict()],
        'return' : SafeDict()},
 }
+
+
+SNAKEI_MISCINFO_WRAPPER_INFO = {
+    'get_bluetooth_info': {
+      'func': miscinfo.get_bluetooth_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_bluetooth_scan_info': {
+      'func': miscinfo.get_bluetooth_scan_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'is_wifi_enabled': {
+      'func': miscinfo.is_wifi_enabled,
+      'args': [],
+      'return': Bool()},
+    'get_wifi_state': {
+      'func': miscinfo.get_wifi_state,
+      'args': [],
+      'return': Int()},
+    'get_wifi_connection_info': {
+      'func': miscinfo.get_wifi_connection_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_wifi_scan_info': {
+      'func': miscinfo.get_wifi_scan_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_network_info': {
+      'func': miscinfo.get_network_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_cellular_provider_info': {
+      'func': miscinfo.get_cellular_provider_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_cell_info': {
+      'func': miscinfo.get_cell_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_sim_info': {
+      'func': miscinfo.get_sim_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_phone_info': {
+      'func': miscinfo.get_phone_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_mode_settings': {
+      'func': miscinfo.get_mode_settings,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_display_info': {
+      'func': miscinfo.get_display_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_volume_info': {
+      'func': miscinfo.get_volume_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+    'get_battery_info': {
+      'func': miscinfo.get_battery_info,
+      'args': [],
+      'return': NoneOrListOrDict()},
+}
+
+SNAKEI_SENSOR_WRAPPER_INFO = {
+    'get_sensor_list': {
+          'func': sensor.get_sensor_list,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_acceleration': {
+          'func': sensor.get_acceleration,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_ambient_temperature': {
+          'func': sensor.get_ambient_temperature,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_game_rotation_vector': {
+          'func': sensor.get_game_rotation_vector,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_geomagnetic_rotation_vector': {
+          'func': sensor.get_geomagnetic_rotation_vector,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_gravity': {
+          'func': sensor.get_gravity,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_gyroscope': {
+          'func': sensor.get_gyroscope,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_gyroscope_uncalibrated': {
+          'func': sensor.get_gyroscope_uncalibrated,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_heart_rate': {
+          'func': sensor.get_heart_rate,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_light': {
+          'func': sensor.get_light,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_linear_acceleration': {
+          'func': sensor.get_linear_acceleration,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_magnetic_field': {
+          'func': sensor.get_magnetic_field,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_magnetic_field_uncalibrated': {
+          'func': sensor.get_magnetic_field_uncalibrated,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_pressure': {
+          'func': sensor.get_pressure,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_proximity': {
+          'func': sensor.get_proximity,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_relative_humidity': {
+          'func': sensor.get_relative_humidity,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_rotation_vector': {
+          'func': sensor.get_rotation_vector,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_step_counter': {
+          'func': sensor.get_step_counter,
+          'args': [],
+          'return': NoneOrListOrDict()},
+}
+
+SNAKEI_MEDIA_WRAPPER_INFO = {
+    'microphone_record': {
+          'func': media.microphone_record,
+          'args': [Str(maxlen=120), Int(min=0)],
+          'return': None},
+    'is_media_playing': {
+          'func': media.is_media_playing,
+          'args': [],
+          'return': Bool()},
+    'is_tts_speaking': {
+          'func': media.is_tts_speaking,
+          'args': [],
+          'return': Bool()},
+    'tts_speak': {
+          'func': media.tts_speak,
+          'args': [Str(maxlen=1024)],
+          'return': None}
+}
+
+SNAKEI_LOCATION_WRAPPER_INFO = {
+    'get_location': {
+          'func': location.get_location,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_lastknown_location': {
+          'func': location.get_lastknown_location,
+          'args': [],
+          'return': NoneOrListOrDict()},
+    'get_geolocation': {
+          'func': location.get_geolocation,
+          'args': [Float(True), Float(True), Int()],
+          'return': NoneOrListOrDict()}
+}
+
+
+
+
+# LP XXX: Hack - Change this!!!!!!
+USERCONTEXT_WRAPPER_INFO.update(SNAKEI_SENSOR_WRAPPER_INFO)
+USERCONTEXT_WRAPPER_INFO.update(SNAKEI_MISCINFO_WRAPPER_INFO)
+USERCONTEXT_WRAPPER_INFO.update(SNAKEI_MEDIA_WRAPPER_INFO)
+USERCONTEXT_WRAPPER_INFO.update(SNAKEI_LOCATION_WRAPPER_INFO)
 
 
 ##############################################################################

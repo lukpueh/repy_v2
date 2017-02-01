@@ -318,6 +318,27 @@ def safe_check_subprocess(code):
   <Return>
     See safe_check.
   """
+
+  if IS_ANDROID:
+    (readhandle, writehandle) = os.pipe()
+
+    procpid = os.fork()
+    if procpid == 0:
+      os.close(readhandle)
+
+      # Check the code
+      try:
+        output = str(safe_check(code))
+      except Exception, e:
+        output = str(type(e)) + " " + str(e)
+
+      nonportable.write_message_to_pipe(writehandle, "safe_check", output)
+      os._exit(0)
+
+    else:
+      os.close(writehandle)
+
+  else:
   
   # Get the path to safe_check.py by using the original start directory of python
   path_to_safe_check = os.path.join(repy_constants.REPY_START_DIR, "safe_check.py")
@@ -336,60 +357,35 @@ def safe_check_subprocess(code):
   # Only wait up to EVALUTATION_TIMEOUT seconds before terminating
   while nonportable.getruntime() - starttime < EVALUTATION_TIMEOUT:
     # Did the process finish running?
-    if proc.poll() != None:
-      break;
+    if (IS_ANDROID and os.waitpid(procpid, os.WNOHANG) != (0, 0)) or \
+        (not IS_ANDROID and proc.poll() != None):
+      break
+
     time.sleep(0.02)
   else:
     # Kill the timed-out process
     try:
-      harshexit.portablekill(proc.pid)
+      harshexit.portablekill(procpid)
     except:
       pass
     raise Exception, "Evaluation of code safety exceeded timeout threshold \
                     ("+str(nonportable.getruntime() - starttime)+" seconds)"
-  
-  # Read the output and close the pipe
-  rawoutput = proc.stdout.read()
-  proc.stdout.close()
-
-
-  # Interim fix for #1080: Get rid of stray debugging output on Android
-  # of the form "dlopen libpython2.6.so" and "dlopen /system/lib/libc.so",
-  # yet preserve all of the other output (including empty lines).
-
+    
   if IS_ANDROID:
-    output = ""
-    for line in rawoutput.split("\n"):
-      # Preserve empty lines
-      if line == "":
-        output += "\n"
-        continue
-      # Suppress debug messages we know can turn up
-      wordlist = line.split()
-      if wordlist[0]=="dlopen":
-        if wordlist[-1]=="/system/lib/libc.so":
-          continue
-        if wordlist[-1].startswith("libpython") and \
-          wordlist[-1].endswith(".so"):
-          # We expect "libpython" + version number + ".so".
-          # The version number should be a string convertible to float.
-          # If it's not, raise an exception.
-          try:
-            versionstring = (wordlist[-1].replace("libpython", 
-              "")).replace(".so", "")
-            junk = float(versionstring)
-          except TypeError, ValueError:
-            raise Exception("Unexpected debug output '" + line + 
-              "' while evaluating code safety!")
-      else:
-        output += line + "\n"
+    # Should return ("safe_check", "None")
+    msg = nonportable.read_message_from_pipe(readhandle)
+    
+    if type(msg) == tuple and len(msg) == 2 and msg[0] == "safe_check":
+      rawoutput = msg[1]
+    else:
+      rawoutput = ""
 
-    # Strip off the last newline character we added
-    output = output[0:-1]
+  else:
+    # Read the output and close the pipe
+    rawoutput = proc.stdout.read()
+    proc.stdout.close()
 
-  else: # We are *not* running on Android, proceed with unfiltered output
-    output = rawoutput
-
+  output = rawoutput
 
   # Check the output, None is success, else it is a failure
   if output == "None":

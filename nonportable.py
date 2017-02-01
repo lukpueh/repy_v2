@@ -35,6 +35,11 @@ except ImportError:
   # Set flag to avoid using subprocess
   mobile_no_subprocess = True 
 
+try:
+  import android
+  IS_ANDROID = True
+except ImportError:
+  IS_ANDROID = False
 
 # used for socket.error
 import socket
@@ -110,7 +115,7 @@ def preparesocket(socketobject):
     # Linux seems not to care if we set the timeout, Mac goes nuts and refuses
     # to let you send from a socket you're receiving on (why?)
     pass
-	
+
   else:
     raise UnsupportedSystemException, "Unsupported system type: '"+osrealtype+"' (alias: "+ostype+")"
   
@@ -119,7 +124,11 @@ def preparesocket(socketobject):
 # This will result in an internal thread on Windows
 # and a thread on the external process for *NIX
 def monitor_cpu_disk_and_mem():
-  if ostype == 'Linux' or ostype == 'Darwin':  
+
+  if IS_ANDROID:
+    do_forked_resource_monitor_android()
+
+  elif ostype == 'Linux' or ostype == 'Darwin':
     # Startup a CPU monitoring thread/process
     do_forked_resource_monitor()
     
@@ -491,7 +500,7 @@ class WinCPUNannyThread(threading.Thread):
         frequency = repy_constants.CPU_POLLING_FREQ_WIN
         
         # Base amount of sleeping on return value of 
-    	  # win_check_cpu_use to prevent under/over sleeping
+        # win_check_cpu_use to prevent under/over sleeping
         slept = win_check_cpu_use(nanny.get_resource_limit("cpu"), self.pid)
         
         if slept == -1:
@@ -653,19 +662,20 @@ IPC_HANDLER_FUNCTIONS = {"repystopped":IPC_handle_stoptime,
                          "diskused":IPC_handle_diskused }
 
 
-# This thread checks that the parent process is alive and invokes
+# This thread checks that a process is alive and invokes
 # delegate methods when messages arrive on the pipe.
-class parent_process_checker(threading.Thread):
+class monitor_process_checker(threading.Thread):
   def __init__(self, readhandle):
     """
     <Purpose>
-      Terminates harshly if our parent dies before we do.
+      Terminates harshly if the monitor process dies before we do.
 
     <Arguments>
-      readhandle: A file descriptor to the handle of a pipe to our parent.
+      readhandle: A file descriptor to the handle of a pipe to the monitor
+          process.
     """
     # Name our self
-    threading.Thread.__init__(self, name="ParentProcessChecker")
+    threading.Thread.__init__(self, name="ProcessChecker")
 
     # Store the handle
     self.readhandle = readhandle
@@ -687,12 +697,12 @@ class parent_process_checker(threading.Thread):
 
       # Print a message if there is a message on an unknown channel
       else:
-        print "[WARN] Message on unknown channel from parent process:", mesg[0]
+        print "[WARN] Message on unknown channel from monitor process:", mesg[0]
 
 
     ### We only leave the loop on a fatal error, so we need to exit now
 
-    # Write out status information, our parent would do this, but its dead.
+    # Write out status information, the monitor process would do this, but its dead.
     statusstorage.write_status("Terminated")  
     print >> sys.stderr, "Monitor process died! Terminating!"
     harshexit.harshexit(70)
@@ -718,10 +728,10 @@ def do_forked_resource_monitor():
     # We are the child, close the write end of the pipe
     os.close(writehandle)
 
-    # Start a thread to check on the survival of the parent
-    parent_process_checker(readhandle).start()
-
+    # Start a thread to check on the survival of the monitor process
+    monitor_process_checker(readhandle).start()
     return
+
   else:
     # We are the parent, close the read end
     os.close(readhandle)
@@ -780,16 +790,84 @@ def do_forked_resource_monitor():
     else:
       _internal_error(str(exp)+" Monitor death! Impolitely killing child!")
       raise
+
+
+def do_forked_resource_monitor_android():
+
+  repypid = os.getpid()
+  (readhandle, writehandle) = os.pipe()
+
+  if os.fork():
+    # Parent does not need to write to the pipe
+    os.close(writehandle)
+
+    # Start a thread to check on the survival of the monitor process
+    monitor_process_checker(readhandle).start()
+
+    # Go do important stuff (execute repy code)
+    return
+
+  # The child does not need to read from the pipe
+  os.close(readhandle)
+
+  # Start the nmstatusinterface
+  nmstatusinterface.launch(repypid)
+
+  kill_repy = False
+  error_msg = False
+  monitor_exit_code = 0
+  try:
+    # Launch the resource monitor, if it fails determine why and restart if necessary
+    resource_monitor(repypid, writehandle)
+
+  except ResourceException, exp:
+    # Repy exceeded its resource limit, kill it
+    kill_repy = True
+    error_msg = str(exp) + " Impolitely killing repy process!"
+    # XXX LP: Why 98? Not defined in harshexit or elsewhere...
+    monitor_exit_code = 98
+
+  except Exception, exp:
+    try:
+      os.kill(repypid, 0)
+    except OSError, err:
+      # This means that there is no more repy process to kill
+      pass
+    else:
+      kill_repy = True
+      error_msg = str(exp) + " Monitor death! Impolitely killing repy process!"
+      monitor_exit_code = 98
+
+  finally:
+    if (error_msg):
+      print >> sys.stderr, error_msg
+
+    # Repy/Montior proccesses both _exit, so the thread should be stopped anyway
+    # nmstatusinterface.stop()
+
+    if (kill_repy):
+      harshexit.portablekill(repypid)
+
+    # XXX LP: Is this actually doeing something???
+    try:
+      statusstorage.write_status("Terminated")
+    except:
+      pass
+
+    # The monitor process (child) should always exit this way on android
+    # because we don't want the child to return back to Java if repy (parent)
+    # is not alive anymore, which it should not be at this point
+    harshexit.harshexit(monitor_exit_code)
   
-def resource_monitor(childpid, pipe_handle):
+def resource_monitor(repypid, pipe_handle):
   """
   <Purpose>
     Function runs in a loop forever, checking resource usage and throttling CPU.
     Checks CPU, memory, and disk.
     
   <Arguments>
-    childpid:
-      The child pid, e.g. the pid of repy
+    repypid:
+      The pid of repy
 
     pipe_handle:
       A handle to the pipe to the repy process. Allows sending resource use information.
@@ -822,7 +900,7 @@ def resource_monitor(childpid, pipe_handle):
     
     # Get the total cpu at this point
     totalCPU =  os_api.get_process_cpu_time(ourpid)   # Our own usage
-    totalCPU += os_api.get_process_cpu_time(childpid) # Repy's usage
+    totalCPU += os_api.get_process_cpu_time(repypid) # Repy's usage
     
     # Calculate percentage of CPU used
     percentused = (totalCPU - last_CPU_time) / elapsedtime
@@ -841,13 +919,13 @@ def resource_monitor(childpid, pipe_handle):
     # If we are supposed to stop repy, then suspend, sleep and resume
     if stoptime > 0.0:
       # They must be punished by stopping
-      os.kill(childpid, signal.SIGSTOP)
+      os.kill(repypid, signal.SIGSTOP)
 
       # Sleep until time to resume
       time.sleep(stoptime)
 
       # And now they can start back up!
-      os.kill(childpid, signal.SIGCONT)
+      os.kill(repypid, signal.SIGCONT)
       
       # Save the resume time
       resume_time = getruntime()
