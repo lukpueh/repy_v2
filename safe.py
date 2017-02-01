@@ -340,16 +340,16 @@ def safe_check_subprocess(code):
 
   else:
   
-  # Get the path to safe_check.py by using the original start directory of python
-  path_to_safe_check = os.path.join(repy_constants.REPY_START_DIR, "safe_check.py")
+    # Get the path to safe_check.py by using the original start directory of python
+    path_to_safe_check = os.path.join(repy_constants.REPY_START_DIR, "safe_check.py")
   
-  # Start a safety check process, reading from the user code and outputing to a pipe we can read
-  proc = subprocess.Popen([sys.executable, path_to_safe_check],
+    # Start a safety check process, reading from the user code and outputing to a pipe we can read
+    proc = subprocess.Popen([sys.executable, path_to_safe_check],
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE)
   
-  # Write out the user code, close so the other end gets an EOF
-  proc.stdin.write(code)
-  proc.stdin.close()
+    # Write out the user code, close so the other end gets an EOF
+    proc.stdin.write(code)
+    proc.stdin.close()
   
   # Wait for the process to terminate
   starttime = nonportable.getruntime()
