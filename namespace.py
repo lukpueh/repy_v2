@@ -949,11 +949,27 @@ if IS_ANDROID:
 	    'return': NoneOrListOrDict()}
   }
 
+  SNAKEI_OUTPUTS_WRAPPER_INFO = {
+      'log': {
+      'func': androidlog.log,
+      'args': [Str()],
+      'return': None},
+      'toast': {
+      'func': androidlog.toast,
+      'args': [Str()],
+      'return': None},
+      'prompt': {
+      'func': androidlog.prompt,
+      'args': [Str()],
+      'return': Bool()}
+  }
+
   # Add sensor calls to the user namespace
   USERCONTEXT_WRAPPER_INFO.update(SNAKEI_SENSOR_WRAPPER_INFO)
   USERCONTEXT_WRAPPER_INFO.update(SNAKEI_MISCINFO_WRAPPER_INFO)
   USERCONTEXT_WRAPPER_INFO.update(SNAKEI_MEDIA_WRAPPER_INFO)
   USERCONTEXT_WRAPPER_INFO.update(SNAKEI_LOCATION_WRAPPER_INFO)
+  USERCONTEXT_WRAPPER_INFO.update(SNAKEI_OUTPUTS_WRAPPER_INFO)
 
 
 ##############################################################################
