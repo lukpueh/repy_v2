@@ -125,6 +125,7 @@ import virtual_namespace
 try:
   import android
   IS_ANDROID = True
+  import androidlog
   import miscinfo
   import sensor
   import media
