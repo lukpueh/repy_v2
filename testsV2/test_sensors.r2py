@@ -1,0 +1,53 @@
+list_of_noargs_sensor_calls = [
+    get_bluetooth_info,
+    get_bluetooth_scan_info,
+    is_wifi_enabled,
+    get_wifi_state,
+    get_wifi_connection_info,
+    get_wifi_scan_info,
+    get_network_info,
+    get_cellular_provider_info,
+    get_cell_info, get_sim_info,
+    get_phone_info, get_mode_settings,
+    get_display_info,
+    get_volume_info,
+    get_battery_info,
+    get_sensor_list,
+    get_acceleration,
+    get_ambient_temperature,
+    get_game_rotation_vector,
+    get_geomagnetic_rotation_vector,
+    get_gravity,
+    get_gyroscope,
+    get_gyroscope_uncalibrated,
+    get_heart_rate,
+    get_light,
+    get_linear_acceleration,
+    get_magnetic_field,
+    get_magnetic_field_uncalibrated,
+    get_pressure,
+    get_proximity,
+    get_relative_humidity,
+    get_rotation_vector,
+    get_step_counter,
+    is_media_playing,
+    is_tts_speaking,
+    get_location,
+    get_lastknown_location,
+]
+
+# On my Nexus 6 with Android 7.1.1, these sensors currently fail:
+# get_wifi_connection_info, get_network_info, get_cell_info,
+# get_sensor_list, get_lastknown_location
+bad_sensor_indices = [4, 6, 8, 15, 36]
+
+for sensor_number in range(len(list_of_noargs_sensor_calls)):
+  if sensor_number in bad_sensor_indices:
+    continue
+  sensor_call_void = list_of_noargs_sensor_calls[sensor_number]
+  log(getruntime(), sensor_number)
+  try:
+    log(sensor_call_void(), "\n")
+  except Exception, e:
+    log("FAILED with exception", repr(e), "\n")
+
