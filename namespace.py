@@ -951,7 +951,7 @@ if IS_ANDROID:
   }
 
   SNAKEI_OUTPUTS_WRAPPER_INFO = {
-    'log': {
+    'androidlog': {
       'func': androidlog.log,
       'args': [Str()],
       'return': None},
