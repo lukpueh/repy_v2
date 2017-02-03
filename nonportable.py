@@ -1025,6 +1025,8 @@ elif osrealtype == "FreeBSD":
 elif ostype == "Windows":
   # There is no real reason to do this, since windows is imported separately
   import windows_api as os_api
+elif osrealtype == "Android":
+  import android_api as os_api
 else:
   # This is a non-supported OS
   raise UnsupportedSystemException, "The current Operating System is not supported! Fatal Error."
