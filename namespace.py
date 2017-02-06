@@ -694,7 +694,11 @@ USERCONTEXT_WRAPPER_INFO = {
   'getresources' :
       {'func' : nonportable.get_resources,
        'args' : [],
-       'return' : (Dict(), Dict(), List())}
+       'return' : (Dict(), Dict(), List())},
+  'getlasterror' :
+      {'func' : emulmisc.getlasterror,
+       'args' : [],
+       'return' : StrOrNone()},
 }
 
 FILE_OBJECT_WRAPPER_INFO = {
