@@ -365,6 +365,15 @@ class StrOrInt(ValueProcessor):
 
 
 
+class StrOrNone(ValueProcessor):
+  """Allows str, unicode, or None."""
+
+  def check(self, val):
+    if val is not None:
+      Str().check(val)
+
+
+
 
 class Float(ValueProcessor):
   """Allows float, int, or long."""
