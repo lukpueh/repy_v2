@@ -582,7 +582,7 @@ class VirtualNamespace(ObjectProcessor):
 
 
 
-class SafeDict(ObjectProcessor):
+class SafeDict(ValueProcessor):
   """Allows SafeDict objects."""
 
   # TODO: provide a copy function that won't actually copy so that
@@ -595,7 +595,7 @@ class SafeDict(ObjectProcessor):
 
 
 
-class DictOrSafeDict(ObjectProcessor):
+class DictOrSafeDict(ValueProcessor):
   """Allows SafeDict objects or regular dict objects."""
 
   # TODO: provide a copy function that won't actually copy so that
